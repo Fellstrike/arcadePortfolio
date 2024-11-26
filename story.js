@@ -4,6 +4,8 @@ let artStatement;
 
 let nilsPic;
 
+let pixelation_level = 10;
+
 function preload() {
     gameFont = loadFont('prstart.ttf');
     nilsPic = loadImage("standardp/img/pictureMe.jpg");
@@ -16,13 +18,32 @@ function setup() {
     background(10);
     imageMode(CENTER);
     textAlign(CENTER);
-    fill(200, 40, 255);
 }
 
 function draw() {
     background(10);
 
-    image(nilsPic, width * 0.5, height * 0.25, width * 0.15, height * 0.45);
+    pixelDensity(1);
+    image(nilsPic, width * 0.5, height * 0.25, width * 0.3, height * 0.45);
+    loadPixels();
+    //print(pixels[0], pixels[1], pixels[2], pixels[3]);
+    noStroke();
+    
+    
+    for (let x = width *0.15; x < width * 0.5; x += pixelation_level) {
+      for (let y = height * 0.15; y < height * 0.45; y += pixelation_level) {
+        
+        let i = (x + y * width) * 4;
+  
+        let r = pixels[i + 0];
+        let g = pixels[i + 1];
+        let b = pixels[i + 2];
+        let a = pixels[i + 3];
+  
+        fill(r, g, b, a);
+        square(x, y, pixelation_level);
+      }
+    };
 
     textSize(height * 0.02);
     text(artStatement, 0, height * 0.6, width, height);
