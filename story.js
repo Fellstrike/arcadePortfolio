@@ -6,7 +6,7 @@ let pixelation_level = 500;
 let currentText = '';
 let textRevealIndex = 0;
 let textRevealTimer = 0;
-let textRevealSpeed = 2; // Lower is faster
+let textRevealSpeed = 1.5; // Lower is faster
 
 function preload() {
     gameFont = loadFont('prstart.ttf');
@@ -55,8 +55,8 @@ function draw() {
             textRevealTimer = 0;
 
             // Reduce pixelation as text reveals
-            if (pixelation_level > 5 && frameCount % 50) {
-                pixelation_level = max(5, pixelation_level - 1);
+            if (pixelation_level > 5 && frameCount % 2 === 0) {
+                pixelation_level = max(5, pixelation_level - 0.75);
             }
         }
     }
