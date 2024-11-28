@@ -28,10 +28,22 @@ let starText;
 let capText;
 let tchDesText;
 
+let prevButton;
+let nextButton;
+let nextGalButton;
+let prevGalButton;
+let homeButton;
+
 
 function preload() {
     gameFont = loadFont('prstart.ttf');
     
+    prevButton = createButton("Previous Image");
+    nextButton = createButton("Next Image");
+    nextGalButton = createButton("Next Gallery");
+    prevGalButton = createButton("Previous Gallery");
+    homeButton = createButton("Return to Title");
+
     starfieldImg = [];
     capstoneImg = [];
     tchDesImg = [];
@@ -70,8 +82,33 @@ function setup() {
     imageMode(CENTER);
     textAlign(CENTER);
 
-    let vidWidth = int(width*0.9);
-    let vidHeight = int(height*0.6);
+    prevButton.position(height* 0.025, height * 0.5);
+    nextButton.position(width  * 0.895, height * 0.5);
+    nextGalButton.position(width * 0.885, height * 0.55);
+    prevGalButton.position(width * 0.005, height * 0.55);
+    homeButton.position(width*0.85, height*0.05);
+
+    prevButton.mousePressed(function(){changeImage(-1);});
+    nextButton.mousePressed(function(){changeImage(1);});
+    nextGalButton.mousePressed(function(){changeGallery(1)});
+    prevGalButton.mousePressed(function(){changeGallery(-1)});
+    homeButton.mousePressed(backToMenu);
+
+    prevButton.style('padding', '10px');
+    nextButton.style('padding', '10px');
+    nextGalButton.style('padding', '10px');
+    prevGalButton.style('padding', '10px');
+    homeButton.style('padding', '10px');
+
+    prevButton.style('background-color', '#BC88C2');
+    nextButton.style('background-color', '#BC88C2');
+    nextGalButton.style('background-color', '#BC88C2');
+    prevGalButton.style('background-color', '#BC88C2');
+    homeButton.style('background-color', '#BC88C2');
+
+
+    let vidWidth = int(width*0.7);
+    let vidHeight = int(height*0.5);
 
     //console.log(vidWidth + " " + vidHeight);
     for (let t = 0; t < tchDesVidCt; t++) {
@@ -145,28 +182,38 @@ function changeGallery(direction) {
     }
 }
 
-function changeImage() {
+function changeImage(value) {
     switch (curGal) {
         case 0:
-            curStar++;
+            curStar += value;
             if (curStar >= starImgCnt + starVidCt)  {
                 //starVideo[starVidCt - 1].hide();
                 curStar = 0;
             }
+            else if (curStar < 0)
+            {
+                curStar = starImgCnt - 1;
+            }
             break;
 
         case 1:
-            curCap++;
+            curCap += value;
             if (curCap >= capImgCnt + capVidCt) {
                // capVideo[capVidCt - 1].hide();
                 curCap = 0;
             }
+            else if (curCap < 0) {
+                curCap = capImgCnt - 1;
+            }
             break;
         case 2:
-            curTchDes++;
+            curTchDes += value;
             if (curTchDes >= tchDesImgCnt + tchDesVidCt) {
                 tchDesVideo[tchDesVidCt-1].hide();
                 curTchDes = 0;
+            }
+            else if (curTchDes < 0) {
+                curTchDes = tchDesVidCt - 1;
             }
             break;
     }

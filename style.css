@@ -1,8 +1,23 @@
 html, body {
   margin: 0;
   padding: 0;
+  font-family: PressStart;
 }
 
 canvas {
   display: block;
+}
+
+button {
+  font-size: 20px;
+  border: none;
+  border-radius: 5px;
+  padding: 20px;
+  color: white;
+  background: #BC88C2;
+}
+
+@font-face {
+  font-family: PressStart;
+  src: url(prstart.ttf);
 }
