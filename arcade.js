@@ -38,3 +38,13 @@ function keyPressed() {
         backToMenu();
     }
 }
+
+class bubbles {
+    constructor(x, y, size, position, color) {
+        this.x = x;
+        this.y = y;
+        this.size = size;
+        this.position = position;
+        this.color = color;
+    }
+}
