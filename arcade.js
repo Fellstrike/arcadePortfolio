@@ -1,313 +1,442 @@
-/*
-*******NEED A WAY TO MAKE RANDOM MAZES*******
-*******Let enemies fire as it gets harder****
-*****Create actual powerups******************
-*/
 let player;
-let enemies = [];
-let fragments = [];
 let walls = [];
+let enemies = [];
+let powerUps = [];
+let fragments = [];
 let projectiles = [];
-let gameLost = false;
+let grid = [];
+let rows, cols, cellSize = 40;
+let totalEnemies = 1;
+let totalFragments = 1;
 let gameStarted = false;
-let totalFragments = 2;
-let totalEnemies = 2;
-let newLocationX = 0;
-let newLocationY = 0;
+let gameLost = false;
+let gameWon = false;
+let level = 0;
+let curLevel = 0;
+let buttText = "[S]tart Game";
+let firingMode = false;
 
+// Initialization
 function setup() {
     createCanvas(windowWidth, windowHeight);
+
+    // Determine grid size
+    cellSize = min(width, height)/20;
+    rows = int(height / cellSize);
+    cols = int(width / cellSize);
+
     resetGame();
 }
 
+// Game loop
 function draw() {
-    background(30);
     if (!gameStarted) {
-        displayStartButton();
-    } else {
-        if (gameLost) {
-            fill(255);
-            textSize(width * 0.05);
-            textAlign(CENTER, CENTER);
-            text("Game Over", width / 2, height / 2);
-            textSize(width * 0.03);
-            text("Press R to Restart", width / 2, height / 2 + height * 0.07);
-            return;
-        }
+        displayStartButt();
+        return;
+    }
 
-        if (checkWinCondition()) {
-            fill(0, 255, 0);
-            textSize(width * 0.05);
-            textAlign(CENTER, CENTER);
-            text("You Win!", width / 2, height / 2);
-            textSize(width * 0.03);
-            text("Press R to Play Again", width / 2, height / 2 + height * 0.07);
-            noLoop();
-            return;
-        }
+    if (gameLost) {
+        gameStarted = false;
+        buttText = "GAME OVE[R]";
+    }
+    else if (gameWon) {
+        gameStarted = false;
+        level++;
+        buttText = "[N]EXT LEVEL";
+        return;
+    }
 
-        // Draw walls
-        for (let wall of walls) {
-            wall.display();
-        }
+    background(50);
 
-        // Draw and update fragments
-        for (let fragment of fragments) {
-            if (!fragment.collected) fragment.display();
-        }
+    // Draw grid for debugging
+    drawGrid();
 
-        // Draw and update enemies
-        for (let enemy of enemies) {
-            enemy.update(player, walls);
-            enemy.display();
-        }
+    // Display walls
+    for (let wall of walls) {
+        wall.display();
+    }
 
-        //Draw and update the player
-        player.update(walls);
-        player.display();
+    // Display and update other elements
+    player.update(walls);
+    player.display();
 
-        //draw and updat eprojectiles
-        for (let i = projectiles.length - 1; i >= 0; i--) {
-            projectiles[i].update(walls);
-            if (projectiles[i].hitWall) {
-                projectiles.splice(i, 1);
-                break
-            }
-            projectiles[i].display();
-        
-            // Check for collision with enemies
-            let hitEnemy = false;
-            for (let j = enemies.length - 1; j >= 0; j--) {
-                if (projectiles[i].hits(enemies[j])) {
-                    enemies.splice(j, 1); // Remove the enemy
-                    hitEnemy = true;
-                    break; // Stop checking other enemies
-                }
-            }
-        
-            // Remove projectile if it hit an enemy
-            if (hitEnemy) {
-                projectiles.splice(i, 1);
-            } else if (projectiles[i].offScreen()) {
-                // Remove projectile if it goes off-screen
-                projectiles.splice(i, 1);
-            }
-        }
-
-        for (let fragment of fragments) {
-            if (dist(player.x, player.y, fragment.x, fragment.y) < fragment.size / 2 + player.size / 2 && !fragment.collected) {
-                player.updateScore();
-                fragment.itemReceived();
-            }
-        }
-
-        for (let enemy of enemies) {
-            if (dist(player.x, player.y, enemy.x, enemy.y) < enemy.size / 2 + player.size / 2 && player.isVulnerable()) {
-                gameLost = player.lifeLost();
-            }
+    for (let enemy of enemies) {
+        enemy.update(player, walls);
+        enemy.display();
+        if (dist(player.x, player.y, enemy.x, enemy.y) < 20) { //checks if player and enemy are touching
+            gameLost = player.lifeLost();
         }
     }
-}
 
-// Display the start button
-function displayStartButton() {
-    push();
-    fill(0, 255, 0);
-    rect(width / 2 - 50, height / 2 - 25, 100, 50); // Button rectangle
-    fill(255);
-    textSize(18);
-    textAlign(CENTER, CENTER);
-    text("Start Game", width / 2, height / 2);
-    pop();
+    for (let f = 0; f < fragments.length; f++) {
+        fragments[f].display();
+        if (player.isTouching(fragments[f])) {
+            player.updateScore();
+            fragments.splice(f, 1);
+            gameWon = checkWinCondition();
+        }
+    }
+
+    handleProjectiles();
+
+    if (keyIsDown(87) || keyIsDown(UP_ARROW)) {
+        player.targetY = player.y - cellSize; 
+    }
+    if (keyIsDown(83) || keyIsDown(DOWN_ARROW)) {
+        player.targetY = player.y + cellSize;
+    }
+    if (keyIsDown(65) || keyIsDown(LEFT_ARROW)) {
+        player.targetX = player.x - cellSize;
+    }
+    if (keyIsDown(68) || keyIsDown(RIGHT_ARROW)) {
+        player.targetX = player.x + cellSize;
+    }
 }
 
 function mousePressed() {
     if (!gameStarted) {
-        let buttonX = width / 2 - 50;
-        let buttonY = height / 2 - 25;
-        let buttonW = 100;
-        let buttonH = 50;
-        
-        // Check if mouse click is within the button
-        if (mouseX > buttonX && mouseX < buttonX + buttonW &&
-            mouseY > buttonY && mouseY < buttonY + buttonH) {
-            gameStarted = true; // Start the game
+        if (mouseX > width / 2 - 75 && mouseX < width / 2 + 75 && mouseY > height / 2 - 25 && mouseY < height / 2 + 25) {
+            gameStarted = true;
+            resetGame();
         }
     }
-    else {
-    player.setTarget(mouseX, mouseY);
+    else if (!firingMode && mouseButton === LEFT) {
+        player.setTarget(mouseX, mouseY);
     }
-}
-
-function touchStarted() {
-    player.setTarget(mouseX, mouseY);
-}
-
-function keyPressed() {
-    if (gameLost || checkWinCondition()) {
-        if (key === "r") resetGame();
-    } else if (key === " ") {
+    else {
         player.shoot();
     }
 }
 
-function detectSpawnpoint(objectSize) {
-    let spawnX, spawnY;
-    let validSpawn = false;
-    let attempts = 0;
-    const maxAttempts = 100;
-
-    while (!validSpawn && attempts < maxAttempts) {
-        // Generate random position
-        spawnX = random(width);
-        spawnY = random(height);
-
-        // Check for collisions with walls
-        validSpawn = true;
-        for (let wall of walls) {
-            if (isPointInsideWall({ x: spawnX, y: spawnY }, wall, objectSize)) {
-                validSpawn = false;
-                break;
-            }
-        }
-
-        attempts++;
+function touchStarted() {
+    
+    if (touches.length > 1) {
+        player.shoot();
     }
-
-    // Fallback if no valid spawn found
-    if (!validSpawn) {
-        spawnX = width / 2;
-        spawnY = height / 2;
+    else {
+        player.setTarget(mouseX, mouseY);
     }
-
-    newLocationX = spawnX;
-    newLocationY = spawnY;
 }
 
-// Helper function to check if a point is inside a wall. Isn't working quite right. Sometimes enemies are still spawning in walls.
-function isPointInsideWall(point, wall, objectSize) {
-    return (
-        point.x + objectSize > wall.x && 
-        point.x < wall.x + wall.w && 
-        point.y + objectSize > wall.y && 
-        point.y < wall.y + wall.h &&
-        point.x < 0 &&
-        point.x + objectSize > width &&
-        point.y < 0 &&
-        point.y  + objectSize > height
-    );
+function keyPressed() {
+    if (gameLost || gameWon) {
+        if (key === "r") resetGame();
+        return;
+    }
+    else if (key === ' ') player.shoot(); 
 }
 
 function resetGame() {
-    let objectSize = min(width, height) * 0.05;
-
+    if (gameLost) {
+        console.log("You lost the game");
+        player.score = 0;
+        level = 0;
+        player.lives = 3;
+    }
+    else if (gameWon && level % 2 == 0) {
+        console.log("Extra Life");
+        player.lives++;
+    }
+    totalEnemies += level;
+    totalFragments += min(totalEnemies, level);
     enemies = [];
     fragments = [];
     walls = [];
     projectiles = [];
-    
-    walls.push(new Wall(random(width - objectSize * 3), random(height - objectSize * 3), random(objectSize * 2, objectSize * 4), random(objectSize * 2, objectSize * 4)));
+    // Initialize grid
+    initializeGrid();
 
-    for (let i = 0; i < 5; i++) {
-        detectSpawnpoint(objectSize * 3);
-        walls.push(new Wall(random(width), random(height), random(objectSize * 2, objectSize * 4), random(objectSize * 2, objectSize * 4)));
+    // Spawn player
+    if (!(gameLost || gameWon)) {
+        player = new Player(cellSize * 0.5, cellSize * 0.5, cellSize * 0.5);
     }
-
-    // Improved spawn detection for player
-    detectSpawnpoint(objectSize);
-    player = new Player(newLocationX, newLocationY, objectSize);
-    
-    // Improved spawn detection for enemies
-    for (let i = 0; i < totalEnemies; i++) {
-        detectSpawnpoint(objectSize);
-        enemies.push(new Enemy(newLocationX, newLocationY, objectSize, color(255, 0, 0)));
+    else {
+        player.x = cellSize * 0.5;
+        player.y = cellSize * 0.5;
+        player.targetX = player.x;
+        player.targetY = player.y;
+        player.shotCooldown = 30;
+        player.cooldown = 60;
     }
-    
-    // Improved spawn detection for fragments
-    for (let i = 0; i < totalFragments; i++) {
-        detectSpawnpoint(objectSize);
-        fragments.push(new TemporalObject(newLocationX, newLocationY, objectSize * 0.75, color(0, 255, 0)));
-    }
-
+    // Initialize walls, enemies, power-ups, and fragments
+    initializeWalls();
+    spawnEnemies();
+    spawnFragments();
+    //validateObjectPlacement();
     gameLost = false;
-    loop();
+    gameWon = false;
+    curLevel = level;
 }
+
+function displayStartButt() {
+    background(44);
+    push();
+    fill(100, 255, 100);
+    rectMode(CENTER);
+    rect(width / 2, height / 2, 150, 50);
+    fill(155);
+    textSize(20);
+    textAlign(CENTER);
+    text(buttText, width / 2, height / 2 + 7);
+    pop();
+}
+
+function handleProjectiles() {
+    for (let i = projectiles.length - 1; i >= 0; i--) {
+        projectiles[i].update(walls);
+        projectiles[i].display();
+
+        if (projectiles[i].hitWall || projectiles[i].offScreen()) {
+            projectiles.splice(i, 1);
+            break;
+        }
+
+        for (let j = enemies.length - 1; j >= 0; j--) {
+            if (projectiles[i].hits(enemies[j])) {
+                enemies.splice(j, 1);
+                projectiles.splice(i, 1);
+                gameWon = checkWinCondition();
+                console.log(gameWon);
+                break;
+            }
+        }
+    }
+}
+
+function displayEndMessage(title, subtitle) {
+    fill(255);
+    textSize(width * 0.05);
+    textAlign(CENTER, CENTER);
+    text(title, width / 2, height / 2);
+    textSize(width * 0.03);
+    text(subtitle, width / 2, height / 2 + height * 0.07);
+}
+
+function initializeGrid() {
+    grid = Array.from({ length: cols }, () =>
+        Array.from({ length: rows }, () => true) // True means walkable
+    );
+}
+
+// Initialize walls
+function initializeWalls() {
+    walls = [];
+    let wallCount = min(20 + 5*level, (rows*cols)/2); // Number of walls
+    let maxWallSize = min(1 + level, 8); // Maximum wall size in cells
+
+    for (let i = 0; i < wallCount; i++) {
+        let wallX = floor(random(cols));
+        let wallY = floor(random(rows));
+        let wallW = floor(random(1, maxWallSize)) * cellSize;
+        let wallH = floor(random(1, maxWallSize)) * cellSize;
+
+        if (wallX == 1 && wallY == 1) {
+            let change = floor(random(2));
+            if (change % 2 == 0) {
+                console.log("X Changed");
+                wallX++;
+            }
+            else {
+                console.log("Y Changed");
+                wallY++;
+            }
+        }
+
+        // Constrain walls within canvas bounds
+        if (wallX * cellSize + wallW > width) wallW = width - wallX * cellSize;
+        if (wallY * cellSize + wallH > height) wallH = height - wallY * cellSize;
+
+        // Avoid player's starting area
+        let wall = new Wall(wallX * cellSize, wallY * cellSize, wallW, wallH);
+        if (overlapsPlayerSpawn(wall)) continue;
+
+        // Update grid to mark wall positions as unwalkable
+        for (let x = wallX; x < wallX + floor(wallW / cellSize); x++) {
+            for (let y = wallY; y < wallY + floor(wallH / cellSize); y++) {
+                if (x < cols && y < rows) grid[x][y] = false;
+            }
+        }
+
+        walls.push(wall);
+    }
+}
+
+function isReachable(x, y) {
+    let visited = Array.from({ length: cols }, () => Array(rows).fill(false));
+    let queue = [[x, y]];
+
+    while (queue.length > 0) {
+        let [currentX, currentY] = queue.shift();
+        if (visited[currentX][currentY]) continue;
+
+        visited[currentX][currentY] = true;
+
+        // Check neighbors
+        let neighbors = [
+            [currentX + 1, currentY],
+            [currentX - 1, currentY],
+            [currentX, currentY + 1],
+            [currentX, currentY - 1],
+        ];
+
+        for (let [nx, ny] of neighbors) {
+            if (nx >= 0 && ny >= 0 && nx < cols && ny < rows && !visited[nx][ny] && grid[nx][ny]) {
+                queue.push([nx, ny]);
+            }
+        }
+    }
+
+    return visited;
+}
+
+function validateObjectPlacement() {
+    let startX = floor(player.x / cellSize);
+    let startY = floor(player.y / cellSize);
+    let reachable = isReachable(startX, startY);
+
+    // Check enemies
+    for (let enemy of enemies) {
+        let x = floor(enemy.x / cellSize);
+        let y = floor(enemy.y / cellSize);
+        if (!reachable[x][y]) {
+            repositionObject(enemy); // Move the enemy to a valid location
+        }
+    }
+
+    // Check fragments
+    for (let fragment of fragments) {
+        let x = floor(fragment.x / cellSize);
+        let y = floor(fragment.y / cellSize);
+        if (!reachable[x][y]) {
+            repositionObject(fragment); // Move the fragment to a valid location
+        }
+    }
+}
+
+function repositionObject(object) {
+    for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < rows; j++) {
+            if (grid[i][j]) {
+                object.x = i * cellSize + cellSize / 2;
+                object.y = j * cellSize + cellSize / 2;
+                return;
+            }
+        }
+    }
+}
+
+function drawGrid() {
+    stroke(100);
+    for (let x = 0; x < cols; x++) {
+        for (let y = 0; y < rows; y++) {
+            if (!grid[x][y]) fill(100); // Mark walls
+            else noFill();
+            rect(x * cellSize, y * cellSize, cellSize, cellSize);
+        }
+    }
+}
+
+// Helper function: Check if a wall overlaps the player's spawn area
+function overlapsPlayerSpawn(wall) {
+    let playerSpawnX = floor(player.x / cellSize);
+    let playerSpawnY = floor(player.y / cellSize);
+
+    for (let x = floor(wall.x / cellSize); x < floor((wall.x + wall.w) / cellSize); x++) {
+        for (let y = floor(wall.y / cellSize); y < floor((wall.y + wall.h) / cellSize); y++) {
+            if (x === playerSpawnX && y === playerSpawnY) return true;
+        }
+    }
+    return false;
+}
+
+function isCollidingWithWalls(x, y, size) {
+    for (let wall of walls) {
+        if (wall.isColliding({ x: x, y: y, size: size })) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function spawnEnemies() {
+    for (let i = 0; i < totalEnemies; i++) {
+        let validSpawn = false;
+        let spawnX, spawnY;
+
+        while (!validSpawn) {
+            spawnX = random(width);
+            spawnY = random(height);
+            validSpawn = !isCollidingWithWalls(spawnX, spawnY, cellSize * 0.5);
+        }
+
+        enemies.push(new Enemy(spawnX, spawnY, cellSize * 0.5, color(255, 0, 0)));
+    }
+}
+
+
+function spawnFragments() {
+    for (let i = 0; i < totalFragments; i++) {
+        let validSpawn = false;
+        let spawnX, spawnY;
+
+        while (!validSpawn) {
+            spawnX = random(width);
+            spawnY = random(height);
+            validSpawn = !isCollidingWithWalls(spawnX, spawnY, cellSize * 0.4);
+        }
+
+        fragments.push(new TemporalObject(spawnX, spawnY, cellSize * 0.4, color(0, 255, 0)));
+    }
+}
+
 
 function checkWinCondition() {
-    return fragments.every(f => f.collected) && enemies.length === 0;
+    return fragments.length === 0 && enemies.length === 0;
 }
 
-// Player class
-// Player class
 class Player {
     constructor(x, y, size) {
         this.x = x;
         this.y = y;
         this.size = size;
-        this.speed = size * 0.15; // Speed relative to size
+        this.speed = size * 0.15;
         this.lives = 3;
         this.score = 0;
-        this.cooldown = 0; // Timer for invulnerability
-        this.cooldownTime = 60; // Frames of invulnerability
-        this.targetX = this.x;
-        this.targetY = this.y;
+        this.cooldown = 60;
+        this.targetX = x;
+        this.targetY = y;
+        this.shotCooldown = 30;
     }
 
     update(walls) {
-        let nextX = this.x;
-        let nextY = this.y;
-
-        // Calculate next position
         let dx = this.targetX - this.x;
         let dy = this.targetY - this.y;
         let distance = dist(this.x, this.y, this.targetX, this.targetY);
-
         if (distance > this.speed) {
-            nextX += (dx / distance) * this.speed;
-            nextY += (dy / distance) * this.speed;
-        }
-
-        // Check for wall collisions
-        let canMove = true;
-        for (let wall of walls) {
-            if (wall.isColliding({ x: nextX, y: nextY, size: this.size })) {
-                canMove = false;
-                //console.log("I hit a waall");
-                break;
+            let nextX = this.x + (dx / distance) * this.speed;
+            let nextY = this.y + (dy / distance) * this.speed;
+            if (!this.isCollidingWithWalls(nextX, nextY, walls)) {
+                this.x = nextX;
+                this.y = nextY;
             }
         }
-
-        // Update position if not colliding
-        if (canMove) {
-            this.x = nextX;
-            this.y = nextY;
-        }
-
-        // Decrease cooldown timer
-        if (this.cooldown > 0) {
-            this.cooldown--;
-        }
+        if (this.cooldown > 0) this.cooldown--;
+        if (this.shotCooldown > 0) this.shotCooldown--;
     }
 
     display() {
-        // Display score
         textSize(width * 0.03);
-        fill(200);
-        textAlign(LEFT, TOP);
-        text("Score: " + this.score, width * 0.05, height * 0.05);
-
-        // Display lives
-        text("Lives: ", width * 0.7, height * 0.05);
-        for (let l = 0; l < this.lives; l++) {
-            fill(200, 0, 200);
-            rect(width * 0.8 + l * this.size * 0.4, height * 0.055, this.size * 0.3, this.size * 0.4);
+        fill(155);
+        text(`Score: ${this.score}`, 50, 30);
+        text(`Lives: ${this.lives}`, 50, 60);
+        if (this.cooldown >= 0 && this.cooldown % 3 != 1) {
+            fill(155, 55, 255);
+            ellipse(this.x, this.y, this.size);
         }
-
-        // Display player
-        push();
-        fill(155, 55, 255);
-        ellipse(this.x, this.y, this.size);
-        pop();
+        else {
+            fill(0, 255, 255);
+            ellipse(this.x, this.y, this.size);
+        }
     }
 
     isVulnerable() {
@@ -315,12 +444,10 @@ class Player {
     }
 
     lifeLost() {
-        if (this.isVulnerable()) {
-        this.lives--;
-        this.cooldown = this.cooldownTime;
-        if (this.lives <= 0) {
-            return true;
-        }
+        if (this.cooldown == 0) {
+            this.lives--;
+            this.cooldown = 60;
+            if (this.lives <= 0) return true;
         }
         return false;
     }
@@ -335,8 +462,22 @@ class Player {
     }
 
     shoot() {
-        let angle = atan2(mouseY - this.y, mouseX - this.x);
-        projectiles.push(new Projectile(this.x, this.y, this.size * 0.2, angle));
+        if (this.shotCooldown === 0) {
+            let angle = atan2(mouseY - this.y, mouseX - this.x);
+            projectiles.push(new Projectile(this.x, this.y, this.size * 0.2, angle));
+            this.shotCooldown = 15;
+        }
+    }
+
+    isTouching(object) {
+        return dist(this.x, this.y, object.x, object.y) < this.size / 2 + object.size / 2;
+    }
+
+    isCollidingWithWalls(nextX, nextY, walls) {
+        for (let wall of walls) {
+            if (wall.isColliding({ x: nextX, y: nextY, size: this.size })) return true;
+        }
+        return false;
     }
 }
 
@@ -507,6 +648,19 @@ class Enemy {
             this.x = nextX;
             this.y = nextY;
         }
+
+        if (this.x < 0) {
+            this.x = this.size;
+        }
+        else if (this.x > width - this.size) {
+            this.x = width - this.size;
+        }
+        if (this.y < 0) {
+            this.y = this.size;
+        }
+        else if (this.y > this.height - this.size) {
+            this.y = this.height - this.size;
+        }
     }
 
     display() {
@@ -522,7 +676,6 @@ class TemporalObject {
         this.y = y;
         this.size = size;
         this.color = oColor;
-        this.collected = false;
     }
 
     display() {
@@ -539,7 +692,6 @@ class TemporalObject {
     }
 }
 
-
 class Wall {
     constructor(x, y, w, h) {
         this.x = x;
@@ -553,13 +705,12 @@ class Wall {
         rect(this.x, this.y, this.w, this.h);
     }
 
-        // Method to check collision
-    isColliding(obj) {
+    isColliding(object) {
         return (
-            obj.x + obj.size / 2 > this.x && // Right side of object past wall's left
-            obj.x - obj.size / 2 < this.x + this.w && // Left side of object past wall's right
-            obj.y + obj.size / 2 > this.y && // Bottom of object past wall's top
-            obj.y - obj.size / 2 < this.y + this.h // Top of object past wall's bottom
+            object.x + object.size / 2 > this.x &&
+            object.x - object.size / 2 < this.x + this.w &&
+            object.y + object.size / 2 > this.y &&
+            object.y - object.size / 2 < this.y + this.h
         );
     }
 }
@@ -569,36 +720,33 @@ class Projectile {
         this.x = x;
         this.y = y;
         this.size = size;
+        this.speed = 10;
         this.angle = angle;
-        this.speed = size * 1.5;
         this.hitWall = false;
     }
 
     update(walls) {
-        // Update the position first
         this.x += cos(this.angle) * this.speed;
         this.y += sin(this.angle) * this.speed;
 
-        // Check for wall collisions after updating position
         for (let wall of walls) {
-            if (wall.isColliding({ x: this.x, y: this.y, size: this.size })) {
+            if (wall.isColliding(this)) {
                 this.hitWall = true;
-                //console.log("Projectile hit a wall!");
                 break;
             }
         }
     }
 
     display() {
-        fill(255, 255, 0);
+        fill(255, 0, 0);
         ellipse(this.x, this.y, this.size);
-    }
-
-    hits(enemy) {
-        return dist(this.x, this.y, enemy.x, enemy.y) < this.size / 2 + enemy.size / 2;
     }
 
     offScreen() {
         return this.x < 0 || this.x > width || this.y < 0 || this.y > height;
+    }
+
+    hits(enemy) {
+        return dist(this.x, this.y, enemy.x, enemy.y) < this.size / 2 + enemy.size / 2;
     }
 }
