@@ -31,6 +31,7 @@ function setup() {
 // Game loop
 function draw() {
     if (!gameStarted) {
+        level = 0;
         displayStartButt();
         return;
     }
@@ -133,7 +134,7 @@ function resetGame() {
         level = 0;
         player.lives = 3;
     }
-    else if (gameWon && level % 2 == 0) {
+    else if (gameWon && level % 2 == 1) {
         console.log("Extra Life");
         player.lives++;
     }
