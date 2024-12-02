@@ -15,10 +15,12 @@ let level = 0;
 let curLevel = 0;
 let buttText = "[S]tart Game";
 let firingMode = false;
+let wallCooldown = 0;
 
 // Initialization
 function setup() {
-    createCanvas(windowWidth, windowHeight);
+    // Subtract cellSize to create a precise border
+    createCanvas(windowWidth - cellSize, windowHeight - cellSize);
 
     // Determine grid size
     cellSize = min(width, height)/20;
@@ -31,18 +33,21 @@ function setup() {
 // Game loop
 function draw() {
     if (!gameStarted) {
-        level = 0;
         displayStartButt();
         return;
     }
 
     if (gameLost) {
         gameStarted = false;
+        level = 0;
+        totalEnemies = 1;
+        totalFragments = 1;
         buttText = "GAME OVE[R]";
     }
     else if (gameWon) {
         gameStarted = false;
         level++;
+        console.log("Level: " + level);
         buttText = "[N]EXT LEVEL";
         return;
     }
@@ -50,12 +55,18 @@ function draw() {
     background(50);
 
     // Draw grid for debugging
-    drawGrid();
+    //drawGrid();
 
     // Display walls
-    for (let wall of walls) {
-        wall.display();
+    for (let w = 0; w < walls.length; w++) {
+        walls[w].display();
+        if (walls[w].hits <= 0 && wallCooldown === 0) {
+            walls.splice(w, 1);
+            wallCooldown = 1200;
+        }
     }
+
+    if (wallCooldown > 0) wallCooldown--;
 
     // Display and update other elements
     player.update(walls);
@@ -66,6 +77,7 @@ function draw() {
         enemy.display();
         if (dist(player.x, player.y, enemy.x, enemy.y) < 20) { //checks if player and enemy are touching
             gameLost = player.lifeLost();
+            //console.log("Did you lose all lives?" + gameLost);
         }
     }
 
@@ -129,16 +141,17 @@ function keyPressed() {
 
 function resetGame() {
     if (gameLost) {
-        console.log("You lost the game");
+        //console.log("You lost the game");
         player.score = 0;
         level = 0;
         player.lives = 3;
     }
-    else if (gameWon && level % 2 == 1) {
-        console.log("Extra Life");
+    else if (gameWon && level % 2 === 0) {
+        //console.log("Extra Life");
         player.lives++;
     }
     totalEnemies += level;
+    //console.log("Enemy #: " + totalEnemies);
     totalFragments += min(totalEnemies, level);
     enemies = [];
     fragments = [];
@@ -167,6 +180,8 @@ function resetGame() {
     gameLost = false;
     gameWon = false;
     curLevel = level;
+    regenerateWallsIfNeeded();
+    //console.log("Level: " + level);
 }
 
 function displayStartButt() {
@@ -197,7 +212,7 @@ function handleProjectiles() {
                 enemies.splice(j, 1);
                 projectiles.splice(i, 1);
                 gameWon = checkWinCondition();
-                console.log(gameWon);
+                //console.log(gameWon);
                 break;
             }
         }
@@ -222,43 +237,144 @@ function initializeGrid() {
 // Initialize walls
 function initializeWalls() {
     walls = [];
-    let wallCount = min(20 + 5*level, (rows*cols)/2); // Number of walls
-    let maxWallSize = min(1 + level, 8); // Maximum wall size in cells
+    let attempts = 0;
+    const MAX_WALL_ATTEMPTS = 10000;
+    const MAX_TOTAL_FAIL_THRESHOLD = 100; // Number of total generation fails before forced minimal walls
+    let totalGenerationFails = 0;
 
-    for (let i = 0; i < wallCount; i++) {
-        let wallX = floor(random(cols));
-        let wallY = floor(random(rows));
-        let wallW = floor(random(1, maxWallSize)) * cellSize;
-        let wallH = floor(random(1, maxWallSize)) * cellSize;
+    // Reset grid to walkable
+    grid = Array.from({ length: cols }, () =>
+        Array.from({ length: rows }, () => true)
+    );
 
-        if (wallX == 1 && wallY == 1) {
-            let change = floor(random(2));
-            if (change % 2 == 0) {
-                console.log("X Changed");
-                wallX++;
+    while (attempts < MAX_WALL_ATTEMPTS) {
+        // Reset walls and grid
+        walls = [];
+        grid = Array.from({ length: cols }, () =>
+            Array.from({ length: rows }, () => true)
+        );
+
+        let wallCount = min(20 + 4*level, floor(rows*cols/4));
+        let maxWallSize = min(1 + level, 3);
+
+        // Player's initial grid position
+        let playerGridX = floor(player.x / cellSize);
+        let playerGridY = floor(player.y / cellSize);
+
+        for (let i = 0; i < wallCount; i++) {
+            let wallX, wallY;
+            let validWallPosition = false;
+            let positionAttempts = 0;
+
+            // Find a valid wall position
+            while (!validWallPosition && positionAttempts < 100) {
+                wallX = floor(random(cols));
+                wallY = floor(random(rows));
+
+                // Ensure wall doesn't overlap player's initial area (3x3 grid around player)
+                if (
+                    Math.abs(wallX - playerGridX) > 1 || 
+                    Math.abs(wallY - playerGridY) > 1
+                ) {
+                    validWallPosition = true;
+                }
+                positionAttempts++;
             }
-            else {
-                console.log("Y Changed");
-                wallY++;
+
+            // Skip if no valid position found
+            if (!validWallPosition) continue;
+
+            let wallW = floor(random(1, maxWallSize)) * cellSize;
+            let wallH = floor(random(1, maxWallSize)) * cellSize;
+
+            // Constrain walls within canvas bounds
+            if (wallX * cellSize + wallW > width) wallW = width - wallX * cellSize;
+            if (wallY * cellSize + wallH > height) wallH = height - wallY * cellSize;
+
+            let wall = new Wall(wallX * cellSize, wallY * cellSize, wallW, wallH);
+            
+            // Mark wall area as unwalkable
+            for (let x = wallX; x < wallX + floor(wallW / cellSize); x++) {
+                for (let y = wallY; y < wallY + floor(wallH / cellSize); y++) {
+                    if (x < cols && y < rows) grid[x][y] = false;
+                }
+            }
+
+            walls.push(wall);
+        }
+
+        // Validate map connectivity
+        let playerX = floor(player.x / cellSize);
+        let playerY = floor(player.y / cellSize);
+        
+        if (validateMapConnectivity(grid, playerX, playerY, [...enemies, ...fragments])) {
+            return; // Map is valid, exit function
+        }
+
+        attempts++;
+        totalGenerationFails++;
+
+        // Emergency brake if too many fails
+        if (totalGenerationFails > MAX_TOTAL_FAIL_THRESHOLD) {
+            console.warn("Repeatedly failed to generate valid map. Creating minimal walls.");
+            walls = [];
+            return;
+        }
+    }
+
+    console.warn("Could not generate a valid map after maximum attempts.");
+    walls = []; // Ensure walls are empty if generation fails
+}
+
+function validateMapConnectivity(grid, startX, startY, targetObjects) {
+    let visited = Array.from({ length: cols }, () => Array(rows).fill(false));
+    let queue = [[startX, startY]];
+    visited[startX][startY] = true;
+    let reachableTargets = 0;
+
+    while (queue.length > 0) {
+        let [currentX, currentY] = queue.shift();
+
+        // Check if we've reached any targets
+        for (let obj of targetObjects) {
+            let objX = floor(obj.x / cellSize);
+            let objY = floor(obj.y / cellSize);
+            if (currentX === objX && currentY === objY) {
+                reachableTargets++;
             }
         }
 
-        // Constrain walls within canvas bounds
-        if (wallX * cellSize + wallW > width) wallW = width - wallX * cellSize;
-        if (wallY * cellSize + wallH > height) wallH = height - wallY * cellSize;
+        // Check neighbors
+        let neighbors = [
+            [currentX + 1, currentY],
+            [currentX - 1, currentY],
+            [currentX, currentY + 1],
+            [currentX, currentY - 1],
+        ];
 
-        // Avoid player's starting area
-        let wall = new Wall(wallX * cellSize, wallY * cellSize, wallW, wallH);
-        if (overlapsPlayerSpawn(wall)) continue;
-
-        // Update grid to mark wall positions as unwalkable
-        for (let x = wallX; x < wallX + floor(wallW / cellSize); x++) {
-            for (let y = wallY; y < wallY + floor(wallH / cellSize); y++) {
-                if (x < cols && y < rows) grid[x][y] = false;
+        for (let [nx, ny] of neighbors) {
+            if (
+                nx >= 0 && ny >= 0 && 
+                nx < cols && ny < rows && 
+                !visited[nx][ny] && 
+                grid[nx][ny]
+            ) {
+                queue.push([nx, ny]);
+                visited[nx][ny] = true;
             }
         }
+    }
 
-        walls.push(wall);
+    return reachableTargets === targetObjects.length;
+}
+
+// Add a helper function to regenerate walls if map is unwinnable
+function regenerateWallsIfNeeded() {
+    let playerX = floor(player.x / cellSize);
+    let playerY = floor(player.y / cellSize);
+    
+    if (!validateMapConnectivity(grid, playerX, playerY, [...enemies, ...fragments])) {
+        initializeWalls();
     }
 }
 
@@ -365,8 +481,8 @@ function spawnEnemies() {
         let spawnX, spawnY;
 
         while (!validSpawn) {
-            spawnX = random(width);
-            spawnY = random(height);
+            spawnX = random(cellSize, width - cellSize);
+            spawnY = random(cellSize, height - cellSize);
             validSpawn = !isCollidingWithWalls(spawnX, spawnY, cellSize * 0.5);
         }
 
@@ -374,15 +490,14 @@ function spawnEnemies() {
     }
 }
 
-
 function spawnFragments() {
     for (let i = 0; i < totalFragments; i++) {
         let validSpawn = false;
         let spawnX, spawnY;
 
         while (!validSpawn) {
-            spawnX = random(width);
-            spawnY = random(height);
+            spawnX = random(cellSize, width - cellSize);
+            spawnY = random(cellSize, height - cellSize);
             validSpawn = !isCollidingWithWalls(spawnX, spawnY, cellSize * 0.4);
         }
 
@@ -416,6 +531,11 @@ class Player {
         if (distance > this.speed) {
             let nextX = this.x + (dx / distance) * this.speed;
             let nextY = this.y + (dy / distance) * this.speed;
+            
+            // Constrain player within screen borders
+            nextX = constrain(nextX, this.size / 2, width - this.size / 2);
+            nextY = constrain(nextY, this.size / 2, height - this.size / 2);
+            
             if (!this.isCollidingWithWalls(nextX, nextY, walls)) {
                 this.x = nextX;
                 this.y = nextY;
@@ -429,7 +549,7 @@ class Player {
         textSize(width * 0.03);
         fill(155);
         text(`Score: ${this.score}`, 50, 30);
-        text(`Lives: ${this.lives}`, 50, 60);
+        text(`Lives: ${this.lives}`, 50, 70);
         if (this.cooldown >= 0 && this.cooldown % 3 != 1) {
             fill(155, 55, 255);
             ellipse(this.x, this.y, this.size);
@@ -447,8 +567,8 @@ class Player {
     lifeLost() {
         if (this.cooldown == 0) {
             this.lives--;
-            this.cooldown = 60;
-            if (this.lives <= 0) return true;
+            if (this.lives < 1) return true;
+            else  this.cooldown = 60;
         }
         return false;
     }
@@ -465,7 +585,7 @@ class Player {
     shoot() {
         if (this.shotCooldown === 0) {
             let angle = atan2(mouseY - this.y, mouseX - this.x);
-            projectiles.push(new Projectile(this.x, this.y, this.size * 0.2, angle));
+            projectiles.push(new Projectile(this.x, this.y, this.size * 0.45, angle));
             this.shotCooldown = 15;
         }
     }
@@ -636,6 +756,10 @@ class Enemy {
         let nextX = this.x + moveX;
         let nextY = this.y + moveY;
 
+        // Constrain enemy within screen borders
+        nextX = constrain(nextX, this.size / 2, width - this.size / 2);
+        nextY = constrain(nextY, this.size / 2, height - this.size / 2);
+
         // Check for wall collisions and update position if no collision
         let canMove = true;
         for (let wall of walls) {
@@ -648,19 +772,6 @@ class Enemy {
         if (canMove) {
             this.x = nextX;
             this.y = nextY;
-        }
-
-        if (this.x < 0) {
-            this.x = this.size;
-        }
-        else if (this.x > width - this.size) {
-            this.x = width - this.size;
-        }
-        if (this.y < 0) {
-            this.y = this.size;
-        }
-        else if (this.y > this.height - this.size) {
-            this.y = this.height - this.size;
         }
     }
 
@@ -699,11 +810,14 @@ class Wall {
         this.y = y;
         this.w = w;
         this.h = h;
+        this.hits = 2;
     }
 
     display() {
-        fill(100);
-        rect(this.x, this.y, this.w, this.h);
+        if (this.hits > 0) {
+            fill(100);
+            rect(this.x, this.y, this.w, this.h);
+        }
     }
 
     isColliding(object) {
@@ -730,21 +844,26 @@ class Projectile {
         this.x += cos(this.angle) * this.speed;
         this.y += sin(this.angle) * this.speed;
 
+        // Constrain projectile within screen borders
+        this.x = constrain(this.x, 0, width);
+        this.y = constrain(this.y, 0, height);
+
         for (let wall of walls) {
             if (wall.isColliding(this)) {
                 this.hitWall = true;
+                if (wallCooldown === 0) wall.hits--;
                 break;
             }
         }
     }
 
+    offScreen() {
+        return this.x <= 0 || this.x >= width - this.size || this.y <= 0 || this.y >= height;
+    }
+
     display() {
         fill(255, 0, 0);
         ellipse(this.x, this.y, this.size);
-    }
-
-    offScreen() {
-        return this.x < 0 || this.x > width || this.y < 0 || this.y > height;
     }
 
     hits(enemy) {
