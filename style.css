@@ -9,6 +9,7 @@ canvas {
 }
 
 button {
+  font-family: PressStart;
   font-size: 20px;
   border: none;
   border-radius: 5px;
