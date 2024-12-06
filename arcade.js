@@ -39,10 +39,16 @@ function setup() {
     cols = int(width / cellSize);
     resetGame();
     togglePause();
+
+    let pauseW = 0;
+    pauseOverlay.style.top = `${height / 2 - 150}px`;
+    pauseOverlay.style.left = `${pauseW}px`;
 }
 
 function draw() {
     if (isPaused) return;
+
+    updateHUD();
 
     background(50);
     if (!gameStarted) {
@@ -64,8 +70,6 @@ function draw() {
         displayEndMessage("You Win!", "Press 'R' to Next Level");
         return;
     }
-
-    updateHUD();
 
     // Continuous movement based on held keys
     handleKeyboardMovement();
@@ -166,15 +170,29 @@ function mousePressed() {
         ) {
             gameStarted = true;
         }
+    } else if (gameLost || gameWon) {
+        // Handle clicks on the "Game Over" or "You Win" message
+        if (
+            mouseX > width / 4 && mouseX < (width / 4) * 3 &&
+            mouseY > height / 2 - 50 && mouseY < height / 2 + 100
+        ) {
+            if (gameLost) {
+                resetGame();
+            } else if (gameWon) {
+                resetGame();
+            }
+            loop();
+        }
     } else if (mouseButton === LEFT) {
         // Set player target with left-click
         player.setTarget(mouseX, mouseY);
-    } else if (mouseButton === RIGHT) {
-        // Shoot projectile with right-click
+    } else if (mouseButton === CENTER) {
+        // Shoot projectile with middle-click
         let angle = atan2(mouseY - player.y, mouseX - player.x);
         projectiles.push(new Projectile(player.x, player.y, player.size * 0.2, angle));
     }
 }
+
 
 let lastTap = 0;
 
@@ -219,6 +237,7 @@ function keyPressed() {
         resetGame(); // Restart the game
         loop();
     }
+    if (key === 's' &&  !gameStarted) gameStarted = true;
 }
 
 function keyReleased() {
@@ -273,12 +292,21 @@ function displayStartButton() {
 }
 
 function displayEndMessage(title, subtitle) {
+    push();
+    fill(45, 45, 155);
+    rectMode(CENTER);
+    rect(width/2, height*0.525, width*0.3, height * 0.15);
+
     fill(255);
     textSize(width * 0.05);
     textAlign(CENTER, CENTER);
     text(title, width / 2, height / 2);
     textSize(width * 0.03);
     text(subtitle, width / 2, height / 2 + height * 0.07);
+    
+
+    pop();
+
     noLoop();
 }
 

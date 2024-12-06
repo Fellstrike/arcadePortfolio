@@ -1,239 +1,182 @@
 let gameFont;
 
-let starfieldImg;
-let capstoneImg;
-let tchDesImg;
+let starfieldImg = [];
+let capstoneImg = [];
+let tchDesImg = [];
+let kinectImg = [];
 
-let starImgCnt = 2;
-let capImgCnt = 2;
-let tchDesImgCnt = 0;
+let starVidCt = 0; 
+let capVidCt = 0; 
+let tchDesVidCt = 1; 
+let kinVidCt = 0;
 
-let starVidCt = 0; //starfield video count
-let capVidCt = 0 //capstone Video Count
-let tchDesVidCt = 1; //Touch Designer Video Count
+let tchDesVideo = [];
+let curGal = 0;
 
-let starVideo;
-let capVideo;
-let tchDesVideo;
-let showVideo = true;
+let galText = ["Starscape", "Secret Third Thing", "Touch Designer", "Interactive Camera"];
+let descText = [
+    "A javascript and Max project that immerses viewers, simulating a starship's viewport.",
+    "An exhibit showcasing the convergence of technology and nature.",
+    "Touch Designer is a visual programming app for interactive media.",
+    "A Processing program combining Kinect and microcontroller data to create interactive 3D visuals."
+];
+let starText = ["An image of the Max Interface with the javascript running.", "An image of a glass filled with an amber liquid, an ice cube, and a cherry."];
+let capText = ["Custom motherboards for some microcontrollers", "A tree with light strings connected to touch sensors, and videos playing nature live streams."];
+let tchDesText = ["The 'eye' tracks the mouse and/or the location of a person in the view of an attached Kinect."];
+let kinectText = ["A program that takes data from a Kinect camera and a custom motion controller to catch on screen 3d objects.", "Another shot of the same program."];
 
-let curStar = 0;
-let curCap = 0;
-let curTchDes = 0;
-let curGal = 0; 
+let curStar = 0, curCap = 0, curTchDes = 0, curKinect = 0;
 
-let galText;
-let descText;
-let starText;
-let capText;
-let tchDesText;
-
-let prevButton;
-let nextButton;
-let nextGalButton;
-let prevGalButton;
-let homeButton;
-
+let prevButton, nextButton, nextGalButton, prevGalButton, homeButton;
 
 function preload() {
     gameFont = loadFont('prstart.ttf');
-    
-    prevButton = createButton("Previous Image");
-    nextButton = createButton("Next Image");
-    nextGalButton = createButton("Next Gallery");
-    prevGalButton = createButton("Previous Gallery");
-    homeButton = createButton("Return to Title");
 
-    starfieldImg = [];
-    capstoneImg = [];
-    tchDesImg = [];
-
-    tchDesVideo = [];
-    starVideo = [];
-    capVideo = [];
-
-    galText = ["Starscape", "Secret Third Thing", "Touch Designer"];
-    descText = [];
-    starText = ["An image of the Max Interface with the javascript running.", "An image of a glass filled with an amber liquid, an ice cube, and a cherry."];
-    capText = ["Image 1", "Image 2"];
-    tchDesText = ["The 'eye' tracks the mouse and/or the location of a person in the view of an attached Kinect."];
-
-    for(let s = 0; s < starImgCnt; s++) {
-        starfieldImg[s] = loadImage("starimg/image" + s + ".png");
+    // Load starfield images
+    for (let i = 0; i < 2; i++) {
+        starfieldImg[i] = loadImage(`starimg/image${i}.png`);
     }
 
-    for(let c = 0; c < capImgCnt; c++) {
-        capstoneImg[c] = loadImage("capstoneImg/image" + c + ".jpg");
+    // Load capstone images
+    for (let i = 0; i < 2; i++) {
+        capstoneImg[i] = loadImage(`capstoneImg/image${i}.png`);
     }
 
-    for (let t = 0; t < tchDesImgCnt; t++) {
-        //tchDesImg[t] = loadImage("tchDes/image" + t + ".png");
+    // Load Kinect images
+    for (let i = 0; i < 2; i++) {
+        kinectImg[i] = loadImage(`kinect/image${i}.jpg`);
     }
-
-    descText[0] = "A javascript and Max project that is meant to immerse the viewer, letting them feel like they are gazing out of a starship's viewport as it travels the stars.";
-    descText[1] = "In June 2024 I participated in an exhibit at the Paragon Arts Gallery by the PCC Sonic Arts and Creative Coding Department and Universal Sound Design, a group working to bring the joys of music to the deaf and hard of hearing. \n\n\nThis Exhibit tried to highlight technology and nature converging.";
-    descText[2] = "Touch Designer is a visual programming app for creating interactive media.";
 }
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
     textFont(gameFont);
     background(10);
-    imageMode(CENTER);
     textAlign(CENTER);
+    imageMode(CENTER);
 
-    prevButton.position(height* 0.025, height * 0.5);
-    nextButton.position(width  * 0.895, height * 0.5);
-    nextGalButton.position(width * 0.885, height * 0.55);
-    prevGalButton.position(width * 0.005, height * 0.55);
-    homeButton.position(width*0.85, height*0.05);
+    setupButtons();
 
-    prevButton.mousePressed(function(){changeImage(-1);});
-    nextButton.mousePressed(function(){changeImage(1);});
-    nextGalButton.mousePressed(function(){changeGallery(1)});
-    prevGalButton.mousePressed(function(){changeGallery(-1)});
-    homeButton.mousePressed(backToMenu);
-
-    prevButton.style('padding', '10px');
-    nextButton.style('padding', '10px');
-    nextGalButton.style('padding', '10px');
-    prevGalButton.style('padding', '10px');
-    homeButton.style('padding', '10px');
-
-    prevButton.style('background-color', '#BC88C2');
-    nextButton.style('background-color', '#BC88C2');
-    nextGalButton.style('background-color', '#BC88C2');
-    prevGalButton.style('background-color', '#BC88C2');
-    homeButton.style('background-color', '#BC88C2');
-
-
-    let vidWidth = int(width*0.7);
-    let vidHeight = int(height*0.5);
-
-    //console.log(vidWidth + " " + vidHeight);
-    for (let t = 0; t < tchDesVidCt; t++) {
-        tchDesVideo[t] = createDiv('<iframe width="' + vidWidth + '" height="' + vidHeight + '" src="https://www.youtube.com/embed/JgKzJq5cO04?si=u-i5Y4-Gt2BMMGvq" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>');
-        tchDesVideo[t].hide();
-    }
-    tchDesVideo[curTchDes].center();
+        // Load Touch Designer video
+        let vidWidth = int(min(width*0.7, height*0.7));
+        let vidHeight = int(min(height*0.4, width*0.4));
+        tchDesVideo[0] = createDiv('<iframe width="' + vidWidth + '" height="' + vidHeight + '" src="https://www.youtube.com/embed/JgKzJq5cO04" frameborder="0" allowfullscreen></iframe>');
+        tchDesVideo[0].hide();
 }
 
 function draw() {
     background(10);
 
-    fill(200,20,255);
-    textSize(height*0.055);
-    text(galText[curGal], 0, height*0.04, width, height*0.1);
+    // Display current gallery and description
+    fill(200, 20, 255);
+    textSize(min(height * 0.065, width * 0.065));
+    text(galText[curGal], 0, 0, width, height*0.14);
 
     fill(230, 200, 255);
-    textSize(height*0.018);
-    text(descText[curGal], 0, height*0.13, width, height*0.3);
+    textSize(min(height * 0.02, width * 0.02));
+    textAlign(CENTER);
+    text(descText[curGal], width*0.1, height * 0.15, width * 0.8, height*0.2);
+
+    // Display gallery content
+    displayGalleryContent();
+}
+
+function setupButtons() {
+    // Create buttons
+    prevButton = createButton("Previous Image");
+    nextButton = createButton("Next Image");
+    prevGalButton = createButton("Previous Gallery");
+    nextGalButton = createButton("Next Gallery");
+    homeButton = createButton("Return to Title");
+
+    // Position buttons
+    positionButtons();
+
+    // Add event listeners
+    prevButton.mousePressed(() => changeImage(-1));
+    nextButton.mousePressed(() => changeImage(1));
+    prevGalButton.mousePressed(() => changeGallery(-1));
+    nextGalButton.mousePressed(() => changeGallery(1));
+    homeButton.mousePressed(backToMenu);
+
+    // Style buttons
+    styleButtons([prevButton, nextButton, prevGalButton, nextGalButton, homeButton]);
+}
+
+function positionButtons() {
+    prevButton.position(width * 0.065, height * 0.75);
+    nextButton.position(width * 0.81, height * 0.75);
+    prevGalButton.position(width * 0.05, height * 0.2);
+    nextGalButton.position(width * 0.81, height * 0.2);
+    homeButton.position(width * 0.85, height * 0.05);
+}
+
+function styleButtons(buttons) {
+    for (let btn of buttons) {
+        btn.style('padding', '10px');
+        btn.style('background-color', '#BC88C2');
+        btn.style('color', 'white');
+        btn.style('border', 'none');
+        btn.style('border-radius', '5px');
+    }
+}
+
+function displayGalleryContent() {
     switch (curGal) {
         case 0:
-            if (curStar <= starImgCnt) {
-                image(starfieldImg[curStar], width*0.5, height*0.6, width*0.6, height*0.6);
+            if (curStar < starfieldImg.length) {
+                image(starfieldImg[curStar], width / 2, height / 2, width * 0.6, height * 0.6);
             }
-            else {
-                //if (curStar > starImgCnt) starVideo(curStar -1).hide();
-                //starVideo(curStar).show();
-            }
-            text(starText[curStar], 0, height*0.912, width, height * 0.09);
+            text(starText[curStar], 0, height*0.912, width, height * 0.09)
             break;
         case 1:
-            if (curCap < capImgCnt) {
-                image(capstoneImg[curCap], width*0.5, height*0.6, width*0.6, height*0.6);
-            }
-            else {
-                //if (curCap > capImgCnt) capVideo[curCap - 1].hide();
-                //capVideo[curCap].show();
+            if (curCap < capstoneImg.length) {
+                image(capstoneImg[curCap], width / 2, height / 2, width * 0.6, height * 0.6);
             }
             text(capText[curCap], 0, height*0.912, width, height * 0.09);
             break;
         case 2:
-            if (curTchDes < tchDesImgCnt) {
-                //image(tchDesImg[curTchDes], width*0.5, height*0.6, width*0.6, height*0.6);
-            }
-            else {
-                //if (curTchDes > tchDesImgCnt) tchDesVideo[curTchDes - 1].hide();
-                tchDesVideo[0].show();
-            }
-        
+            for (let vid of tchDesVideo) vid.hide();
+            tchDesVideo[curTchDes].show();
+            tchDesVideo[curTchDes].position(width / 2 - 280, height / 2 - 157); // Center video
             text(tchDesText[curTchDes], 0, height*0.912, width, height * 0.09);
             break;
+        case 3:
+            if (curKinect < kinectImg.length) {
+                image(kinectImg[curKinect], width / 2, height / 2, width * 0.6, height * 0.6);
+            }
+            text(kinectText[curKinect], 0, height*0.912, width, height*0.09);
+            break;
     }
-}
-
-/************************************NEED TO MAKE BUTTONS FOR MOBILE NAVIGATOIN *********************************************************
- ************************************CREATE FX FOR IMAGE AND TEXT CHANGES & ADD SOUNDS**************************************************/
-function backToMenu() {
-    window.location.href = "index.html"
 }
 
 function changeGallery(direction) {
-    if (curGal == 2) {
-        tchDesVideo[tchDesVidCt-1].hide();
-    }
-    curGal += direction;
-    if (curGal >= galText.length) {
-        curGal = 0;
-    }
-    else if (curGal < 0) {
-        curGal = galText.length - 1;
-    }
+    tchDesVideo[curTchDes].hide(); // Hide Touch Designer video
+    curGal = (curGal + direction + galText.length) % galText.length; // Cycle galleries
 }
 
-function changeImage(value) {
+function changeImage(direction) {
     switch (curGal) {
         case 0:
-            curStar += value;
-            if (curStar >= starImgCnt + starVidCt)  {
-                //starVideo[starVidCt - 1].hide();
-                curStar = 0;
-            }
-            else if (curStar < 0)
-            {
-                curStar = starImgCnt - 1;
-            }
+            curStar = (curStar + direction + starfieldImg.length) % starfieldImg.length;
             break;
-
         case 1:
-            curCap += value;
-            if (curCap >= capImgCnt + capVidCt) {
-               // capVideo[capVidCt - 1].hide();
-                curCap = 0;
-            }
-            else if (curCap < 0) {
-                curCap = capImgCnt - 1;
-            }
+            curCap = (curCap + direction + capstoneImg.length) % capstoneImg.length;
             break;
         case 2:
-            curTchDes += value;
-            if (curTchDes >= tchDesImgCnt + tchDesVidCt) {
-                tchDesVideo[tchDesVidCt-1].hide();
-                curTchDes = 0;
-            }
-            else if (curTchDes < 0) {
-                curTchDes = tchDesVidCt - 1;
-            }
+            curTchDes = (curTchDes + direction + tchDesVideo.length) % tchDesVideo.length;
+            break;
+        case 3:
+            curKinect = (curKinect + direction + kinectImg.length) % kinectImg.length;
             break;
     }
 }
 
-function keyPressed() {
-    if (keyCode === LEFT_ARROW || keyCode === RIGHT_ARROW) {
-        changeImage();
-    }
-    else if (keyCode === UP_ARROW || keyCode === DOWN_ARROW) {
-        let direction;
-        if (keyCode === UP_ARROW) {
-            direction = -1;
-        }
-        else if (keyCode === DOWN_ARROW) {
-            direction = 1;
-        }
-        changeGallery(direction);
-    }
-    else if (keyCode === 32) {
-        backToMenu();
-    }
+function backToMenu() {
+    window.location.href = "index.html";
+}
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+    positionButtons();
 }

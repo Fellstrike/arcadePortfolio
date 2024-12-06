@@ -7,11 +7,26 @@ let currentText = '';
 let textRevealIndex = 0;
 let textRevealTimer = 0;
 let textRevealSpeed = 1.5; // Lower is faster
+let homeButton;
 
 function preload() {
-    gameFont = loadFont('prstart.ttf');
-    nilsPic = loadImage("butterflySelf.png");
-    artStatement = "I'm Nilsine, an immersive artist out of Portland, OR. I create experiences that blend the real and digital worlds allowing anyone regardless of age discover and play without shame. I want my work to drive people to interact and explore my art in a natural way.\n\n\nUsing small computers my art can register what people are doing and have that change how those people experience my art. \n\nMy art is influenced by my experiences growing up as a queer nerd in the 90s, playing D&D despite the satanic panic, collaborative online storytelling, spending time in arcades, and early internet culture. I want to let people rediscover childlike wonder by viewing and interacting with my art. Hoping that  people can carry those discoveries into their ‘mundane’ life allowing them to find small moments of magic in their day to day experience.";
+    try {
+        gameFont = loadFont('prstart.ttf');
+        nilsPic = loadImage("butterflySelf.png");
+    } catch (error) {
+        console.error("Failed to load assets:", error);
+    }
+
+        // Create and style home button
+        homeButton = createButton("Return to Title");
+        homeButton.mousePressed(backToMenu);
+        homeButton.style('padding', '10px');
+        homeButton.style('background-color', '#5D3FD3');
+        homeButton.style('color', 'white');
+        homeButton.style('border', 'none');
+        homeButton.style('border-radius', '5px');
+
+    artStatement = "I'm Nilsine, an immersive artist out of Portland, OR. I create experiences that blend the real and digital worlds allowing anyone regardless of age to discover and play without shame. I want my work to drive people to interact and explore my art in a natural way.\n\n\nUsing small computers my art can register what people are doing and have that change how those people experience my art. \n\nMy art is influenced by my experiences growing up as a queer nerd in the 90s, playing D&D despite the satanic panic, collaborative online storytelling, spending time in arcades, and early internet culture. I want to let people rediscover childlike wonder by viewing and interacting with my art. Hoping that people can carry those discoveries into their ‘mundane’ life allowing them to find small moments of magic in their day to day experience.";
 }
 
 function setup() {
@@ -21,32 +36,53 @@ function setup() {
     imageMode(CENTER);
     textAlign(LEFT);
     pixelatedImage = createGraphics(width, height);
+    homeButton.position(width * 0.85, height * 0.05);
 }
 
 function draw() {
     background(10);
 
-    // Render image with progressive pixelation
-    pixelatedImage.clear();
-    pixelatedImage.image(nilsPic, width * 0.35, height * 0.1, width * 0.3, height * 0.45);
-    pixelatedImage.loadPixels();
-    
-    noStroke();
-    for (let x = width * 0.15; x < width * 0.65; x += pixelation_level) {
-        for (let y = height * 0.05; y < height * 0.65; y += pixelation_level) {
-            let i = (floor(x) + floor(y) * width) * 4;
-            
-            let r = pixelatedImage.pixels[i + 0];
-            let g = pixelatedImage.pixels[i + 1];
-            let b = pixelatedImage.pixels[i + 2];
-            let a = pixelatedImage.pixels[i + 3];
-            
-            fill(r, g, b, a);
-            square(x, y, pixelation_level);
-        }
-    }
+    // Render pixelated image progressively
+    renderPixelatedImage();
 
-    // Progressive text reveal and pixelation reduction
+    // Reveal text progressively
+    revealText();
+
+    // Display the current text
+    displayArtStatement();
+
+    // Display navigation instructions
+    displayNavigationText();
+}
+
+function renderPixelatedImage() {
+    if (nilsPic) {
+        pixelatedImage.clear();
+        pixelatedImage.image(nilsPic, width * 0.35, height * 0.1, width * 0.3, height * 0.45);
+        pixelatedImage.loadPixels();
+
+        noStroke();
+        for (let x = width * 0.15; x < width * 0.65; x += pixelation_level) {
+            for (let y = height * 0.05; y < height * 0.65; y += pixelation_level) {
+                let i = (floor(x) + floor(y) * width) * 4;
+                let r = pixelatedImage.pixels[i + 0];
+                let g = pixelatedImage.pixels[i + 1];
+                let b = pixelatedImage.pixels[i + 2];
+                let a = pixelatedImage.pixels[i + 3];
+                
+                fill(r, g, b, a);
+                square(x, y, pixelation_level);
+            }
+        }
+    } else {
+        fill(255, 50, 50);
+        textSize(height * 0.02);
+        textAlign(CENTER);
+        text("Image failed to load.", width / 2, height / 2);
+    }
+}
+
+function revealText() {
     textRevealTimer++;
     if (textRevealTimer >= textRevealSpeed) {
         if (textRevealIndex < artStatement.length) {
@@ -60,35 +96,43 @@ function draw() {
             }
         }
     }
+}
 
-    fill(205, 155, 255); 
-    
-    textSize(height * 0.016); 
+function displayArtStatement() {
+    fill(205, 155, 255);
+    textSize(min(height * 0.02, width * 0.02));
     let statementX = width * 0.05;
-    let statementY = height * 0.66;
+    let statementY = height * 0.6;
     let statementWidth = width * 0.9;
-    
     text(currentText, statementX, statementY, statementWidth, height * 0.3);
+}
 
-    // Navigation text
-    textSize(height * 0.015);
+function displayNavigationText() {
+    textSize(min(height * 0.012, width * 0.012));
     textAlign(CENTER);
+    fill(205, 155, 255);
     text("Press Any Key to Return to Title", width / 2, height * 0.98);
 
+    // Check if any key is pressed to return to the menu
     if (keyIsPressed) {
         backToMenu();
     }
 }
 
 function backToMenu() {
-    window.location.href = "index.html"
+    window.location.href = "index.html";
 }
 
 function keyPressed() {
-    // Optional: Speed up text reveal or skip to full text
+    // Skip the progressive text reveal and pixelation
     if (textRevealIndex < artStatement.length) {
         currentText = artStatement;
         textRevealIndex = artStatement.length;
         pixelation_level = 5;
     }
+}
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+    setup(); // Reapply styles and positioning on resize
 }
