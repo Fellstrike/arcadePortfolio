@@ -60,7 +60,7 @@ function setup() {
         // Load Touch Designer video
         let vidWidth = int(min(width*0.7, height*0.7));
         let vidHeight = int(min(height*0.4, width*0.4));
-        tchDesVideo[0] = createDiv('<iframe width="' + vidWidth + '" height="' + vidHeight + '" src="https://www.youtube.com/embed/JgKzJq5cO04" frameborder="0" allowfullscreen></iframe>');
+        tchDesVideo[0] = createDiv('<iframe width="' + vidWidth + '" height="' + vidHeight + '" src="https://www.youtube.com/embed/eqExJ7ufHBI?si=VJjQTyVspV7spoIS" frameborder="0" allowfullscreen></iframe>');
         tchDesVideo[0].hide();
 }
 
