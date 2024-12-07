@@ -7,7 +7,13 @@ let currentText = '';
 let textRevealIndex = 0;
 let textRevealTimer = 0;
 let textRevealSpeed = 1.5; // Lower is faster
+
 let homeButton;
+let cvButton;
+let capSiteButton; //Capstone Website button (unimplimented)
+let openPButton; //Open Processing Button (unimplimented)
+let gitButton;
+let mailButton;
 
 function preload() {
     try {
@@ -17,26 +23,56 @@ function preload() {
         console.error("Failed to load assets:", error);
     }
 
-        // Create and style home button
-        homeButton = createButton("Return to Title");
-        homeButton.mousePressed(backToMenu);
-        homeButton.style('padding', '10px');
-        homeButton.style('background-color', '#5D3FD3');
-        homeButton.style('color', 'white');
-        homeButton.style('border', 'none');
-        homeButton.style('border-radius', '5px');
+    // Create and style buttons
+    homeButton = createButton("Main Menu");
+    homeButton.mousePressed(backToMenu);
+    homeButton.style('padding', '10px');
+    homeButton.style('background-color', '#5D3FE5');
+    homeButton.style('color', 'white');
+    homeButton.style('border', 'none');
+    homeButton.style('border-radius', '5px');
+
+    cvButton = createButton("Artist CV");
+    cvButton.mousePressed(downloadCV);
+    cvButton.style('padding', '10px');
+    cvButton.style('background-color', '#5D2FD0');
+    cvButton.style('color', 'white');
+    cvButton.style('border', 'none');
+    cvButton.style('border-radius', '5px');
+
+    gitButton = createButton("Github");
+    gitButton.mousePressed(toGithub);
+    gitButton.style('padding', '10px');
+    gitButton.style('background-color', '#5D2FA0');
+    gitButton.style('color', 'white');
+    gitButton.style('border', 'none');
+    gitButton.style('border-radius', '5px');
+
+    mailButton = createButton("E-mail Me");
+    mailButton.mousePressed(sendEmail);
+    mailButton.style('padding', '10px');
+    mailButton.style('background-color', '#5C0FA0');
+    mailButton.style('color', 'white');
+    mailButton.style('border', 'none');
+    mailButton.style('border-radius', '5px');
 
     artStatement = "I'm Nilsine, an immersive artist out of Portland, OR. I create experiences that blend the real and digital worlds allowing anyone regardless of age to discover and play without shame. I want my work to drive people to interact and explore my art in a natural way.\n\n\nUsing small computers my art can register what people are doing and have that change how those people experience my art. \n\nMy art is influenced by my experiences growing up as a queer nerd in the 90s, playing D&D despite the satanic panic, collaborative online storytelling, spending time in arcades, and early internet culture. I want to let people rediscover childlike wonder by viewing and interacting with my art. Hoping that people can carry those discoveries into their ‘mundane’ life allowing them to find small moments of magic in their day to day experience.";
 }
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
+    
     textFont(gameFont);
     background(10);
     imageMode(CENTER);
     textAlign(LEFT);
+
     pixelatedImage = createGraphics(width, height);
-    homeButton.position(width * 0.85, height * 0.05);
+    
+    homeButton.position(width * 0.85, height * 0.02);
+    cvButton.position(width * 0.85, height * 0.07);
+    mailButton.position(width*0.85, height * 0.12);
+    gitButton.position(width * 0.865, height * 0.17);
 }
 
 function draw() {
@@ -80,6 +116,9 @@ function renderPixelatedImage() {
         textAlign(CENTER);
         text("Image failed to load.", width / 2, height / 2);
     }
+    if (!pixelatedImage && nilsPic) {
+        image(nilsPic, width * 0.45, height * 0.3, width * 0.3, height * 0.45);
+    }
 }
 
 function revealText() {
@@ -121,6 +160,32 @@ function displayNavigationText() {
 
 function backToMenu() {
     window.location.href = "index.html";
+}
+
+function toGithub () {
+    window.location.href = "https://github.com/Fellstrike";
+}
+
+function downloadCV () {
+    // Trigger the download of the resume file
+    let resumeLink = document.createElement("a");
+    resumeLink.href = "standardp/myResume.pdf"; // Update with the actual path to your resume file
+    resumeLink.download = "Nilsine_Resume.pdf";
+    resumeLink.click();
+}
+
+let clicked = false;
+function sendEmail () {
+    window.location.href = "mailto:nickwihtol@gmail.com?subject=Interested in Your Work";
+    if (clicked) {
+        mailButton.html("nickwihtol@gmail.com");
+        mailButton.position(width * 0.75, height*0.12);
+    }
+    else {
+        mailButton.html("Email Me");
+        mailButton.position(width * 0.85, height * 0.12);
+    }
+    clicked = !clicked;
 }
 
 function keyPressed() {
