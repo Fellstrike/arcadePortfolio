@@ -69,10 +69,10 @@ function setup() {
 
     pixelatedImage = createGraphics(width, height);
     
-    homeButton.position(width * 0.85, height * 0.02);
-    cvButton.position(width * 0.85, height * 0.07);
-    mailButton.position(width*0.85, height * 0.12);
-    gitButton.position(width * 0.865, height * 0.17);
+    homeButton.position(width * 0.05, height * 0.05);
+    cvButton.position(width * 0.3, height * 0.05);
+    mailButton.position(width*0.55, height * 0.05);
+    gitButton.position(width * 0.8, height * 0.05);
 }
 
 function draw() {
@@ -91,7 +91,7 @@ function draw() {
     displayNavigationText();
 }
 
-function renderPixelatedImage() {
+function renderPixelatedImage() {       //picture doesn't load on mobile.
     if (nilsPic) {
         pixelatedImage.clear();
         pixelatedImage.image(nilsPic, width * 0.35, height * 0.1, width * 0.3, height * 0.45);
@@ -115,9 +115,6 @@ function renderPixelatedImage() {
         textSize(height * 0.02);
         textAlign(CENTER);
         text("Image failed to load.", width / 2, height / 2);
-    }
-    if (!pixelatedImage && nilsPic) {
-        image(nilsPic, width * 0.45, height * 0.3, width * 0.3, height * 0.45);
     }
 }
 
@@ -174,16 +171,16 @@ function downloadCV () {
     resumeLink.click();
 }
 
-let clicked = false;
+let clicked = true;
 function sendEmail () {
     window.location.href = "mailto:nickwihtol@gmail.com?subject=Interested in Your Work";
     if (clicked) {
         mailButton.html("nickwihtol@gmail.com");
-        mailButton.position(width * 0.75, height*0.12);
+        mailButton.position(width * 0.49, height*0.05);
     }
     else {
         mailButton.html("Email Me");
-        mailButton.position(width * 0.85, height * 0.12);
+        mailButton.position(width * 0.55, height * 0.05);
     }
     clicked = !clicked;
 }
