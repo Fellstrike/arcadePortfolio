@@ -14,6 +14,8 @@ let level = 0;
 let wallCooldown = 0;
 let startButtonText = "[S]tart Game";
 let keys = {}; // Tracks currently held keys
+let playAgainButton;
+let mainMenuButton2;
 
 const scoreDisplay = document.getElementById("score");
 const livesDisplay = document.getElementById("lives");
@@ -21,6 +23,60 @@ const pauseButton = document.getElementById("pauseButton");
 const pauseOverlay = document.getElementById("pauseOverlay");
 const resumeButton = document.getElementById("resumeButton");
 const mainMenuButton = document.getElementById("mainMenuButton");
+pauseOverlay.style.cssText = `
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.8); /* Semi-transparent background */
+    position: absolute;
+    width: 100%;
+    height: 150%;
+`;
+
+resumeButton.style.cssText = `
+    padding: 15px 30px;
+    margin: 10px;
+    font-size: 20px;
+    color: #ffffff;
+    background-color: #001bDD; /* Green background */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+`;
+
+resumeButton.addEventListener("mouseover", () => {
+    resumeButton.style.backgroundColor = "#003b55"; // Darker green on hover
+    resumeButton.style.transform = "scale(1.1)";
+});
+
+resumeButton.addEventListener("mouseout", () => {
+    resumeButton.style.backgroundColor = "#001bDD"; // Original green
+    resumeButton.style.transform = "scale(1)";
+});
+
+mainMenuButton.style.cssText = `
+    padding: 15px 30px;
+    margin: 10px;
+    font-size: 20px;
+    color: #ffffff;
+    background-color: #007bff; /* Blue background */
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.2s;
+`;
+
+mainMenuButton.addEventListener("mouseover", () => {
+    mainMenuButton.style.backgroundColor = "#00DbCC"; // Darker blue on hover
+    mainMenuButton.style.transform = "scale(1.1)";
+});
+
+mainMenuButton.addEventListener("mouseout", () => {
+    mainMenuButton.style.backgroundColor = "#007bff"; // Original blue
+    mainMenuButton.style.transform = "scale(1)";
+});
 
 // Pause the game
 pauseButton.addEventListener("click", togglePause);
@@ -60,14 +116,14 @@ function draw() {
         level = 0;
         totalEnemies = 1;
         totalFragments = 0;
-        displayEndMessage("Game Over", "Press 'R' to Restart");
+        displayEndMessage("Game Over");
         return;
     }
 
     if (gameWon) {
         level++;
         if (level % 2 == 0) player.lives++;
-        displayEndMessage("You Win!", "Press 'R' to Next Level");
+        displayNextLevelMessage("You Win!");
         return;
     }
 
@@ -234,7 +290,8 @@ function keyPressed() {
 
     if (key === "r" && (gameLost || gameWon)) {
         //console.log("Released R");
-        resetGame(); // Restart the game
+        resetGame();
+        removeButtons(); // Restart the game
         loop();
     }
     if (key === 's' &&  !gameStarted) gameStarted = true;
@@ -251,7 +308,6 @@ function keyReleased() {
 }
 
 function resetGame() {
-    //console.log("Released R");
     walls = [];
     enemies = [];
     fragments = [];
@@ -279,6 +335,14 @@ function resetGame() {
     validateObjectPlacement();
 }
 
+function resumeLoop() {
+    gameLost = false;
+    gameWon = false;
+    resetGame();
+    loop();
+    removeButtons();
+}
+
 function displayStartButton() {
     push();
     fill(100, 255, 100);
@@ -291,24 +355,86 @@ function displayStartButton() {
     pop();
 }
 
-function displayEndMessage(title, subtitle) {
+function displayEndMessage(title) {
     push();
+    noLoop();
     fill(45, 45, 155);
     rectMode(CENTER);
-    rect(width/2, height*0.525, width*0.3, height * 0.15);
+    rect(width / 2, height * 0.5, width * 0.4, height * 0.3);
 
     fill(255);
     textSize(width * 0.05);
     textAlign(CENTER, CENTER);
-    text(title, width / 2, height / 2);
+    text(title, width / 2, height * 0.4); // Title: "Game Over" or "You Win"
     textSize(width * 0.03);
-    text(subtitle, width / 2, height / 2 + height * 0.07);
-    
+    text("Score: " + player.score, width / 2, height * 0.5); // Subtitle: "Score: 250"
+
+    // Play Again Button
+    if (!playAgainButton) {
+        playAgainButton = createButton("Play Again");
+        playAgainButton.position(width / 2 - 50, height * 0.6);
+        playAgainButton.mousePressed(resumeLoop);
+    }
+    else playAgainButton.show();
+    playAgainButton.html("Play Again?");
+
+    // Main Menu Button
+    if (!mainMenuButton2) {
+        mainMenuButton2 = createButton("Main Menu");
+        mainMenuButton2.position(width / 2 - 50, height * 0.65);
+        mainMenuButton2.mousePressed(() => window.location.href = "index.html");
+    }
+    else mainMenuButton2.show();
 
     pop();
-
-    noLoop();
 }
+
+function displayNextLevelMessage(title) {
+    push();
+    noLoop();
+    fill(45, 45, 155);
+    rectMode(CENTER);
+    rect(width / 2, height * 0.5, width * 0.4, height * 0.3);
+
+    fill(255);
+    textSize(width * 0.05);
+    textAlign(CENTER, CENTER);
+    text(title, width / 2, height * 0.4); // Title: "Game Over" or "You Win"
+    textSize(width * 0.03);
+    text("Current Score: " + player.score, width / 2, height * 0.5); // Subtitle: "Score: 250"
+
+    // Play Again Button
+    if (!playAgainButton) {
+        playAgainButton = createButton("Next Level");
+        playAgainButton.position(width / 2 - 50, height * 0.6);
+        playAgainButton.mousePressed(resumeLoop);
+    }
+    else playAgainButton.show();
+    playAgainButton.html("Next Level?");
+
+    // Main Menu Button
+    if (!mainMenuButton2) {
+        mainMenuButton2 = createButton("Main Menu");
+        mainMenuButton2.position(width / 2 - 50, height * 0.65);
+        mainMenuButton2.mousePressed(() => window.location.href = "index.html");
+    }
+    else mainMenuButton2.show();
+
+    pop();
+}
+
+function removeButtons() {
+    // Remove buttons if they exist
+    if (playAgainButton) {
+        playAgainButton.remove();
+        playAgainButton = null;
+    }
+    if (mainMenuButton2) {
+        mainMenuButton2.remove();
+        mainMenuButton2 = null;
+    }
+}
+
 
 function initializeGrid() {
     grid = Array.from({ length: cols }, () => Array.from({ length: rows }, () => true));

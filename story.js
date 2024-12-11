@@ -8,12 +8,19 @@ let textRevealIndex = 0;
 let textRevealTimer = 0;
 let textRevealSpeed = 1.5; // Lower is faster
 
+let menuButton = [];
+let curBttn = 0;
+let email = false;
+
 let homeButton;
 let cvButton;
 let capSiteButton; //Capstone Website button (unimplimented)
 let openPButton; //Open Processing Button (unimplimented)
 let gitButton;
 let mailButton;
+let storyButton;
+
+let isMobileDevice;
 
 function preload() {
     try {
@@ -22,6 +29,10 @@ function preload() {
     } catch (error) {
         console.error("Failed to load assets:", error);
     }
+
+    let details = navigator.userAgent || '';
+    let regexp = /android|iphone|kindle|ipad/i;
+    isMobileDevice = regexp.test(details);
 
     // Create and style buttons
     homeButton = createButton("Main Menu");
@@ -56,28 +67,45 @@ function preload() {
     mailButton.style('border', 'none');
     mailButton.style('border-radius', '5px');
 
+    storyButton = createButton("Interactive Story");
+    storyButton.mousePressed(toInteractiveStory);
+    storyButton.style('padding', '10px');
+    storyButton.style('background-color', '#5A0EC9');
+    storyButton.style('color', 'white');
+    storyButton.style('border', 'none');
+    storyButton.style('border-radius', '5px');
+
     artStatement = "I'm Nilsine, an immersive artist out of Portland, OR. I create experiences that blend the real and digital worlds allowing anyone regardless of age to discover and play without shame. I want my work to drive people to interact and explore my art in a natural way.\n\n\nUsing small computers my art can register what people are doing and have that change how those people experience my art. \n\nMy art is influenced by my experiences growing up as a queer nerd in the 90s, playing D&D despite the satanic panic, collaborative online storytelling, spending time in arcades, and early internet culture. I want to let people rediscover childlike wonder by viewing and interacting with my art. Hoping that people can carry those discoveries into their ‘mundane’ life allowing them to find small moments of magic in their day to day experience.";
+
+    menuButton = [homeButton, cvButton, storyButton, gitButton, mailButton];
 }
 
 function setup() {
     createCanvas(windowWidth, windowHeight);
-    
     textFont(gameFont);
-    background(10);
-    imageMode(CENTER);
-    textAlign(LEFT);
 
     pixelatedImage = createGraphics(width, height);
-    
-    homeButton.position(width * 0.05, height * 0.05);
-    cvButton.position(width * 0.3, height * 0.05);
-    mailButton.position(width*0.55, height * 0.05);
-    gitButton.position(width * 0.8, height * 0.05);
+
+    resizeButtons();
+
+
+    // ARIA Labels
+    homeButton.attribute('aria-label', 'Return to Main Menu');
+    cvButton.attribute('aria-label', 'Download Artist CV');
+    storyButton.attribute('aria-label', "Go Read My Interactive Story")
+    gitButton.attribute('aria-label', 'View My GitHub Profile');
+    mailButton.attribute('aria-label', 'Send Email to Nilsine');
 }
 
 function draw() {
     background(10);
+    if (email) text("nickwihtol@gmail.com", width*0.85, height*0.15);
 
+    for (b = 0; b < menuButton.length; b++) {
+        if (b == curBttn) menuButton[b].style('outline', '3px solid yellow');
+        else menuButton[b].style('outline', 'none');
+    }
+    
     // Render pixelated image progressively
     renderPixelatedImage();
 
@@ -91,8 +119,88 @@ function draw() {
     displayNavigationText();
 }
 
-function renderPixelatedImage() {       //picture doesn't load on mobile.
-    if (nilsPic) {
+function menuFunction() {
+    switch (curBttn) {
+        case 0:
+            backToMenu();
+            break;
+        case 1:
+            downloadCV();
+            break;
+        case 2:
+            toInteractiveStory();
+            break;
+        case 3:
+            toGithub();
+            break;
+        case 4:
+            sendEmail();
+            break;
+    }
+}
+
+function keyPressed() {
+    switch (keyCode) {
+        case ENTER:
+            menuFunction();
+            break;
+        case RIGHT_ARROW:
+            curBttn++;
+            break;
+        case LEFT_ARROW:
+            curBttn--;
+            break;
+    }
+    if (curBttn < 0) {
+        curBttn = menuButton.length - 1;
+    }
+    else if (curBttn >= menuButton.length) {
+        curBttn = 0;
+    }
+    console.log(curBttn);
+}
+
+function toInteractiveStory() {
+    window.location.href = "standardp/story1/index.html";
+}
+
+function setupButtonsAccessibility(buttons) {
+    buttons.forEach((btn, index) => {
+        btn.attribute('tabindex', index + 1); // Set focus order
+        btn.mouseOver(() => btn.style('outline', '2px solid yellow')); // Highlight on focus
+        btn.mouseOut(() => btn.style('outline', 'none'));
+    });
+}
+
+function resizeButtons() {
+    let buttonSize = min(width * 0.02, height * 0.02); // Base size scaling
+    let buttonWidth = buttonSize * 10; // Fixed button width
+    let buttonHeight = buttonSize * 2.5; // Fixed button height
+    let totalButtonWidth = buttonWidth * menuButton.length; // Total width occupied by buttons
+    let centerSpace = width - (totalButtonWidth*1.5);
+    let spacing = (width - totalButtonWidth - centerSpace) / (menuButton.length + 50); // Spacing between buttons
+
+    // Position and style buttons
+    for (let i = 0; i < menuButton.length; i++) {
+        let xPos = centerSpace + spacing + i * (buttonWidth + spacing); // Calculate x-position
+        let yPos = height * 0.05; // Consistent vertical position
+
+        menuButton[i].position(xPos, yPos);
+        menuButton[i].size(buttonWidth, buttonHeight);
+
+        // Adjust text size based on button width and text length
+        let textLength = menuButton[i].elt.innerHTML.length;
+        let textSize = min(buttonWidth / (textLength * 0.72), buttonHeight * 0.35); // Dynamic scaling
+        menuButton[i].style('font-size', `${textSize}px`);
+        menuButton[i].style('padding', `${buttonSize / 4}px`);
+    }
+}
+
+function renderPixelatedImage() {  
+    if (isMobileDevice) {
+        image(nilsPic, width * 0.35, height * 0.175, width * 0.3, height * 0.45);
+    }
+    else if (nilsPic) {
         pixelatedImage.clear();
         pixelatedImage.image(nilsPic, width * 0.35, height * 0.1, width * 0.3, height * 0.45);
         pixelatedImage.loadPixels();
@@ -136,23 +244,17 @@ function revealText() {
 
 function displayArtStatement() {
     fill(205, 155, 255);
-    textSize(min(height * 0.02, width * 0.02));
-    let statementX = width * 0.05;
-    let statementY = height * 0.6;
-    let statementWidth = width * 0.9;
-    text(currentText, statementX, statementY, statementWidth, height * 0.3);
+    let baseSize = min(width, height);
+    textSize(baseSize * 0.0195); // Scale text size
+    fill(205, 155, 255);
+    text(currentText, width * 0.05, height * 0.53, width * 0.9, height * 0.45);
 }
 
 function displayNavigationText() {
-    textSize(min(height * 0.012, width * 0.012));
+    fill(205, 155, 255); // Matching text color
+    textSize(min(width, height) * 0.015); // Responsive font size
     textAlign(CENTER);
-    fill(205, 155, 255);
-    text("Press Any Key to Return to Title", width / 2, height * 0.98);
-
-    // Check if any key is pressed to return to the menu
-    if (keyIsPressed) {
-        backToMenu();
-    }
+    text("Use Left and Right Arrow Keys to navigate, and Enter to activate menu buttons.", width / 2.5, height - 30); 
 }
 
 function backToMenu() {
@@ -175,26 +277,15 @@ let clicked = true;
 function sendEmail () {
     window.location.href = "mailto:nickwihtol@gmail.com?subject=Interested in Your Work";
     if (clicked) {
-        mailButton.html("nickwihtol@gmail.com");
-        mailButton.position(width * 0.49, height*0.05);
+        email = true;
     }
     else {
-        mailButton.html("Email Me");
-        mailButton.position(width * 0.55, height * 0.05);
+        email = false;
     }
     clicked = !clicked;
 }
 
-function keyPressed() {
-    // Skip the progressive text reveal and pixelation
-    if (textRevealIndex < artStatement.length) {
-        currentText = artStatement;
-        textRevealIndex = artStatement.length;
-        pixelation_level = 5;
-    }
-}
-
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
-    setup(); // Reapply styles and positioning on resize
+    resizeButtons();
 }
