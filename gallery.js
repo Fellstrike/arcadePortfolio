@@ -13,6 +13,8 @@ let kinVidCt = 0;
 let tchDesVideo = [];
 let curGal = 0;
 
+let reSizeV = 0.5;
+
 let galText = ["Starscape", "Secret Third Thing", "Touch Designer", "Interactive Camera"];
 let descText = [
     "A javascript and Max project that immerses viewers, simulating a starship's viewport.",
@@ -63,6 +65,23 @@ function setup() {
     tchDesVideo[0] = createDiv('<iframe width="' + vidWidth + '" height="' + vidHeight + '" src="https://www.youtube.com/embed/eqExJ7ufHBI?si=VJjQTyVspV7spoIS" frameborder="0" allowfullscreen></iframe>');
     //tchDesVideo.attribute('align', 'center');
     tchDesVideo[0].hide();
+
+    for (let i = 0; i < 2; i++) {
+        starfieldImg[i].resize(min(width * (reSizeV+0.05), height * (reSizeV+0.05)), 0);
+    }
+
+    starfieldImg[0].resize(width*0.5, 0);
+
+    // Load capstone images
+    for (let i = 0; i < 2; i++) {
+        capstoneImg[i].resize(min(width * (reSizeV+0.05), height * (reSizeV+0.05)), 0);
+    }
+    capstoneImg[1].resize(0, height*0.55);
+
+    // Load Kinect images
+    for (let i = 0; i < 2; i++) {
+        kinectImg[i].resize(0, min(width * (reSizeV+0.05), height * (reSizeV+0.05)));
+    }
 }
 
 function draw() {
@@ -134,13 +153,13 @@ function displayGalleryContent() {
     switch (curGal) {
         case 0:
             if (curStar < starfieldImg.length) {
-                image(starfieldImg[curStar], width / 2, height / 2, width * 0.6, height * 0.6);
+                image(starfieldImg[curStar], width / 2, height / 2);
             }
             text(starText[curStar], 0, height*0.912, width, height * 0.09)
             break;
         case 1:
             if (curCap < capstoneImg.length) {
-                image(capstoneImg[curCap], width / 2, height / 2, width * 0.6, height * 0.6);
+                image(capstoneImg[curCap], width / 2, height / 2);
             }
             text(capText[curCap], 0, height*0.912, width, height * 0.09);
             break;
@@ -152,7 +171,7 @@ function displayGalleryContent() {
             break;
         case 3:
             if (curKinect < kinectImg.length) {
-                image(kinectImg[curKinect], width / 2, height / 2, width * 0.6, height * 0.6);
+                image(kinectImg[curKinect], width / 2, height / 2);
             }
             text(kinectText[curKinect], 0, height*0.912, width, height*0.09);
             break;
