@@ -38,7 +38,7 @@ function preload() {
     homeButton = createButton("Main Menu");
     homeButton.mousePressed(backToMenu);
     homeButton.style('padding', '10px');
-    homeButton.style('background-color', '#5D3FE5');
+    homeButton.style('background-color', '#5D3FEE');
     homeButton.style('color', 'white');
     homeButton.style('border', 'none');
     homeButton.style('border-radius', '5px');
@@ -59,6 +59,14 @@ function preload() {
     gitButton.style('border', 'none');
     gitButton.style('border-radius', '5px');
 
+    openPButton = createButton("Open Processing");
+    openPButton.mousePressed(toOpenP);
+    openPButton.style('padding', '10px');
+    openPButton.style('background-color', '#5D2F93');
+    openPButton.style('color', 'white');
+    openPButton.style('border', 'none');
+    openPButton.style('border-radius', '5px');
+
     mailButton = createButton("E-mail Me");
     mailButton.mousePressed(sendEmail);
     mailButton.style('padding', '10px');
@@ -77,7 +85,7 @@ function preload() {
 
     artStatement = "I'm Nilsine, an immersive artist out of Portland, OR. I create experiences that blend the real and digital worlds allowing anyone regardless of age to discover and play without shame. I want my work to drive people to interact and explore my art in a natural way.\n\n\nUsing small computers my art can register what people are doing and have that change how those people experience my art. \n\nMy art is influenced by my experiences growing up as a queer nerd in the 90s, playing D&D despite the satanic panic, collaborative online storytelling, spending time in arcades, and early internet culture. I want to let people rediscover childlike wonder by viewing and interacting with my art. Hoping that people can carry those discoveries into their ‘mundane’ life allowing them to find small moments of magic in their day to day experience.";
 
-    menuButton = [homeButton, cvButton, storyButton, gitButton, mailButton];
+    menuButton = [homeButton, cvButton, storyButton, openPButton, gitButton, mailButton];
 }
 
 function setup() {
@@ -92,8 +100,9 @@ function setup() {
     // ARIA Labels
     homeButton.attribute('aria-label', 'Return to Main Menu');
     cvButton.attribute('aria-label', 'Download Artist CV');
-    storyButton.attribute('aria-label', "Go Read My Interactive Story")
+    storyButton.attribute('aria-label', "Go Read My Interactive Story");
     gitButton.attribute('aria-label', 'View My GitHub Profile');
+    openPButton.attribute('aria-label', 'Viewable Work at Open Processing');
     mailButton.attribute('aria-label', 'Send Email to Nilsine');
 }
 
@@ -131,12 +140,19 @@ function menuFunction() {
             toInteractiveStory();
             break;
         case 3:
-            toGithub();
+            toOpenP();
             break;
         case 4:
+            toGithub();
+            break;
+        case 5:
             sendEmail();
             break;
     }
+}
+
+function toOpenP() {
+    window.location.href = "https://openprocessing.org/user/475647?o=3&view=sketches";
 }
 
 function keyPressed() {

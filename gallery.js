@@ -16,7 +16,7 @@ let curGal = 0;
 let galText = ["Starscape", "Secret Third Thing", "Touch Designer", "Interactive Camera"];
 let descText = [
     "A javascript and Max project that immerses viewers, simulating a starship's viewport.",
-    "An exhibit showcasing the convergence of technology and nature.",
+    "An exhibit showcasing the convergence of technology and nature. Click this text to see the interactive website made for the project.",
     "Touch Designer is a visual programming app for interactive media.",
     "A Processing program combining Kinect and microcontroller data to create interactive 3D visuals."
 ];
@@ -57,12 +57,12 @@ function setup() {
 
     setupButtons();
 
-        // Load Touch Designer video
-        let vidWidth = int(min(width*0.7, height*0.7));
-        let vidHeight = int(min(height*0.4, width*0.4));
-        tchDesVideo[0] = createDiv('<iframe width="' + vidWidth + '" height="' + vidHeight + '" src="https://www.youtube.com/embed/eqExJ7ufHBI?si=VJjQTyVspV7spoIS" frameborder="0" allowfullscreen></iframe>');
-        //tchDesVideo.attribute('align', 'center');
-        tchDesVideo[0].hide();
+    // Load Touch Designer video
+    let vidWidth = int(min(width*0.7, height*0.7));
+    let vidHeight = int(min(height*0.4, width*0.4));
+    tchDesVideo[0] = createDiv('<iframe width="' + vidWidth + '" height="' + vidHeight + '" src="https://www.youtube.com/embed/eqExJ7ufHBI?si=VJjQTyVspV7spoIS" frameborder="0" allowfullscreen></iframe>');
+    //tchDesVideo.attribute('align', 'center');
+    tchDesVideo[0].hide();
 }
 
 function draw() {
@@ -77,9 +77,17 @@ function draw() {
     textSize(min(height * 0.02, width * 0.02));
     textAlign(CENTER);
     text(descText[curGal], width*0.1, height * 0.15, width * 0.8, height*0.2);
+    if (curGal === 1 && mouseIsPressed && mouseX > width*0.1 && mouseX < width*0.9 && mouseY > height*0.15 && mouseY < height * 0.2) {
+        gotoSecretSite();
+    }
+   
 
     // Display gallery content
     displayGalleryContent();
+}
+
+function gotoSecretSite() {
+    window.location.href = 'https://p5c2024.netlify.app';
 }
 
 function setupButtons() {
